@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insight Bot Landing Page</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Insight Bot</h1>
+        <p>Your one-stop tool to gain insights from videos and documents.</p>
+
+        <!-- Input section for media -->
+        <div class="input-section">
+            <input type="text" id="youtube-link" placeholder="Enter YouTube Link">
+            <button onclick="addYoutubeLink()">Add Link</button>
+        </div>
+        <div class="input-section">
+            <input type="file" id="upload-docs" multiple accept=".pdf,.doc,.docx,.txt">
+            <button onclick="addDocuments()">Add Files</button>
+        </div>
+
+        <!-- Display selected inputs -->
+        <div id="media-list">
+            <p><strong>Selected Media:</strong></p>
+            <ul id="media-items"></ul>
+        </div>
+
+        <!-- Get Insights Button -->
+        <div class="clear-section">
+            <button onclick="goToChatbot()">Get Insights</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
