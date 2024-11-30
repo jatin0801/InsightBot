@@ -28,10 +28,12 @@ from dotenv import load_dotenv
 # Global variables
 load_dotenv()
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-os.environ['PINECONE_API_KEY'] = os.getenv("PINECONE_API_KEY") # jatin
-os.environ['GROQ_API_KEY'] = os.getenv("GROQ_API_KEY") # jatin
+# os.environ['PINECONE_API_KEY'] = os.getenv("PINECONE_API_KEY") # jatin
+# os.environ['GROQ_API_KEY'] = os.getenv("GROQ_API_KEY") # jatin
+# os.environ.get('PINECONE_API_KEY')
+# os.environ.get('GROQ_API_KEY')
 
-groq_client = Groq(api_key=os.environ['GROQ_API_KEY'])
+groq_client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
 
 def get_huggingface_embeddings(text, model_name="sentence-transformers/all-MiniLM-L6-v2"):
     model = SentenceTransformer(model_name)
@@ -84,6 +86,16 @@ def process_directory(directory_path):
                 print(f"Error processing file {file_path}: {e}")
     return data
 
+def process_txt_file(file_path):
+    print(f"Processing file: {file_path}")
+    data = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            file_data = f.read()
+            data.append({"File": file_path, "Data": file_data})
+    except Exception as e:
+                print(f"Error processing file {file_path}: {e}")
+    return data
 
 def delete_files_in_directory(directory_path):
     files = os.listdir(directory_path)
@@ -134,7 +146,7 @@ def chunk_data(docs, chunk_size=1000,chunk_overlap=50):
 
 def upsert_vectorstore_to_pinecone(document_data, embeddings, index_name, namespace):
     # # Initialize Pinecone connection with the new API structure
-    pc = pinecone.Pinecone(api_key=os.environ['PINECONE_API_KEY'])
+    pc = pinecone.Pinecone(api_key=os.environ.get('PINECONE_API_KEY'))
 
     # Check if the namespace exists in the index
     index = pc.Index(index_name)
@@ -175,7 +187,7 @@ def upsert_vectorstore_to_pinecone(document_data, embeddings, index_name, namesp
 def initialize_pinecone(index_name: str):
 
     # Create an instance of the Pinecone class
-    pc = Pinecone(api_key=os.environ['PINECONE_API_KEY'])
+    pc = Pinecone(api_key=os.environ.get('PINECONE_API_KEY'))
 
     #Check if the index already exists; if not, raise an error or handle accordingly
     if index_name not in [index.name for index in pc.list_indexes().indexes]:
@@ -228,23 +240,16 @@ class YouTubeTranscriber:
         self.transcript_language = transcript_language
         self.output_dir = output_dir
 
-        # Check if the URL is for a playlist or a single video
+        # Determine if the URL is a playlist or single video
         if 'playlist?list=' in url:
             self.is_playlist = True
-            self.playlist = []
-            # Disable SSL verification
-            ssl._create_default_https_context = ssl._create_unverified_context
-            playlist_urls = Playlist(url)
-            for url in playlist_urls:
-                self.playlist.append(url)
+            playlist_urls = self._get_playlist_urls(url)
+            self.playlist_ids = []
+            for pu in playlist_urls:
+                self.playlist_ids.append(self._get_video_id(pu))
         elif 'watch?v=' in url or 'youtu.be/' in url:
             self.is_playlist = False
-            if 'watch?v=' in url:
-                # Extract video ID from "https://www.youtube.com/watch?v="
-                self.video_id = url.split('watch?v=')[1].split('&')[0]
-            elif 'youtu.be/' in url:
-                # Extract video ID from "https://youtu.be/"
-                self.video_id = url.split('youtu.be/')[1].split('?')[0]
+            self.video_id = self._get_video_id(url)
         else:
             raise ValueError("Invalid URL. Provide a valid YouTube playlist or video URL.")
 
@@ -252,6 +257,32 @@ class YouTubeTranscriber:
         os.makedirs(self.output_dir, exist_ok=True)
         if self.is_playlist:
             print(f"Found {len(self.playlist)} videos in the playlist.")
+    
+    def _get_playlist_urls(self, playlist_url):
+        """
+        Extracts video URLs from a YouTube playlist.
+
+        :param playlist_url: URL of the YouTube playlist
+        :return: List of video URLs in the playlist
+        """
+        # Disable SSL verification
+        ssl._create_default_https_context = ssl._create_unverified_context
+        playlist_urls = Playlist(playlist_url)
+        return list(playlist_urls)
+
+    def _get_video_id(self, video_url):
+        """
+        Extracts the video ID from a YouTube video URL.
+
+        :param video_url: URL of the YouTube video
+        :return: Video ID as a string
+        """
+        if 'watch?v=' in video_url:
+            return video_url.split('watch?v=')[1].split('&')[0]
+        elif 'youtu.be/' in video_url:
+            return video_url.split('youtu.be/')[1].split('?')[0]
+        else:
+            raise ValueError("Invalid video URL format.")
 
     def fetch_transcript(self, video_id):
         """
@@ -285,18 +316,7 @@ class YouTubeTranscriber:
         """
         Processes each video in the playlist to fetch and save transcripts.
         """
-        for video_url in self.playlist:
-            # Extract video ID from URL
-            video_id = video_url.split('=')[-1]
-            if 'watch?v=' in video_url:
-                # Extract video ID from "https://www.youtube.com/watch?v="
-                video_id = video_url.split('watch?v=')[1].split('&')[0]
-            elif 'youtu.be/' in video_url:
-                # Extract video ID from "https://youtu.be/"
-                video_id = video_url.split('youtu.be/')[1].split('?')[0]
-            else:
-                raise ValueError("Invalid URL. Provide a valid YouTube playlist or video URL.")
-            # Fetch and save the transcript
+        for video_id in self.playlist_ids:
             transcript = self.fetch_transcript(video_id)
             if transcript:
                 self.save_transcript_to_file(video_id, transcript)
@@ -318,3 +338,13 @@ class YouTubeTranscriber:
             self.transcribe_playlist()
         else:
             self.transcribe_single_video()
+    
+    def file_exists(self, video_id):
+        """
+        Checks if the transcript file for a given video ID already exists.
+
+        :param video_id: YouTube video ID
+        :return: True if file exists, False otherwise
+        """
+        file_path = os.path.join(self.output_dir, f"{video_id}_transcript.txt")
+        return [os.path.isfile(file_path), file_path] # [True/False, path]

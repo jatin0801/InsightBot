@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import os
 from utils import *
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": ["chrome-extension://eiiahlhaagkfnmgababhglmlonbebhke"]}})
 
 # GLOBAL
 document_dir_path = "resources/documents"
@@ -17,6 +19,7 @@ def home():
 def chatbot():
     return render_template('chatbot.html')
 
+# submit multiple media files, youtube links
 @app.route('/submit_media', methods=['POST'])
 def submit_media():
     try:
@@ -42,8 +45,9 @@ def submit_media():
                     transcriber = YouTubeTranscriber(youtube_link, output_dir = transcript_dir_path)
                     transcriber.transcribe()
                     print(f"Transcription complete for: {youtube_link}")
-            documents = process_directory(transcript_dir_path)
-            all_documents.extend(documents)
+            # process all transcripts
+            transcript_documents = process_directory(transcript_dir_path)
+            all_documents.extend(transcript_documents)
 
         # Process uploaded documents
         if files:
@@ -52,6 +56,7 @@ def submit_media():
                 file_path = os.path.join(document_dir_path, file.filename)
                 file.save(file_path)
                 print(f"Saved file: {file_path}")
+            # process all documents
             uploaded_documents = process_directory(document_dir_path)
             all_documents.extend(uploaded_documents)
 
