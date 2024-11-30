@@ -33,7 +33,6 @@ embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-
 # os.environ.get('PINECONE_API_KEY')
 # os.environ.get('GROQ_API_KEY')
 
-groq_client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
 
 def get_huggingface_embeddings(text, model_name="sentence-transformers/all-MiniLM-L6-v2"):
     model = SentenceTransformer(model_name)
@@ -217,6 +216,7 @@ def perform_rag(pinecone_index, namespace, query):
     Respond clearly and concisely with complete accuracy.
     '''
 
+    groq_client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
     res = groq_client.chat.completions.create(
         model="llama-3.1-70b-versatile", # llama-3.1-70b-versatile
         messages=[
