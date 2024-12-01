@@ -91,5 +91,5 @@ def ask_question():
 
 if __name__ == "__main__":
     # port = int(os.environ.get("PORT", 5000))
-    port=5001
-    app.run(port=port, debug=False)
+    # port=5001
+    app.run()
