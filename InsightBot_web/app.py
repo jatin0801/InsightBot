@@ -9,6 +9,7 @@ CORS(app, resources={r"/*": {"origins": ["chrome-extension://eiiahlhaagkfnmgabab
 # GLOBAL
 document_dir_path = "resources/documents"
 transcript_dir_path = "resources/transcripts"
+rag_client = RAG()
 
 # route to home page
 @app.route('/')
@@ -25,6 +26,7 @@ def submit_media():
     try:
         delete_files_in_directory(transcript_dir_path)
         delete_files_in_directory(document_dir_path)
+        rag_client.reset_memory()
 
         # Get YouTube links and documents from the request
         youtube_links = request.form.getlist('youtube_links[]')  # List of YouTube links
@@ -70,7 +72,7 @@ def submit_media():
         # Upsert to Pinecone or your vector store
         index_name = "insight-bot"
         namespace = "media-data"
-        vectorstore_from_documents = upsert_vectorstore_to_pinecone(documents_chunks, embeddings, index_name, namespace)
+        vectorstore_from_documents = rag_client.upsert_vectorstore_to_pinecone(documents_chunks, index_name, namespace)
         print('=== Upsert to Pinecone done ===', vectorstore_from_documents)
 
         return jsonify({"message": "Media processed successfully!"})
@@ -85,9 +87,8 @@ def ask_question():
     # Get the response from the model
     index_name = "insight-bot"
     namespace = "media-data"
-    pinecone_index = initialize_pinecone(index_name)
-    answer=perform_rag(pinecone_index, namespace, question)
+    answer=rag_client.perform_rag(index_name, namespace, question)
     return jsonify({"question": question, "answer": answer})
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

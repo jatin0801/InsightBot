@@ -6,10 +6,9 @@ from pytube import Playlist
 from youtube_transcript_api import YouTubeTranscriptApi
 
 from sentence_transformers import SentenceTransformer
-from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_pinecone import PineconeVectorStore
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.schema import Document as LangchainDocument
 
 import pinecone
@@ -26,17 +25,11 @@ from docx import Document as DocxDocument
 from dotenv import load_dotenv
 
 # Global variables
-load_dotenv()
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
 # os.environ['PINECONE_API_KEY'] = os.getenv("PINECONE_API_KEY") # jatin
 # os.environ['GROQ_API_KEY'] = os.getenv("GROQ_API_KEY") # jatin
 # os.environ.get('PINECONE_API_KEY')
 # os.environ.get('GROQ_API_KEY')
-
-
-def get_huggingface_embeddings(text, model_name="sentence-transformers/all-MiniLM-L6-v2"):
-    model = SentenceTransformer(model_name)
-    return model.encode(text)
 
 def process_directory(directory_path):
     data = []
@@ -137,95 +130,120 @@ def prepare_data(documents):
 
     return document_data
 
-
 def chunk_data(docs, chunk_size=1000,chunk_overlap=50):
     textsplitter=RecursiveCharacterTextSplitter(chunk_size=chunk_size,chunk_overlap=chunk_overlap)
     docs=textsplitter.split_documents(docs)
     return docs
 
-def upsert_vectorstore_to_pinecone(document_data, embeddings, index_name, namespace):
-    # # Initialize Pinecone connection with the new API structure
-    pc = pinecone.Pinecone(api_key=os.environ.get('PINECONE_API_KEY'))
+class RAG:
+    def __init__(self, model_name = "sentence-transformers/all-MiniLM-L6-v2"):
+        load_dotenv()
+        self.model_name = model_name
+        self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        self.conversation_history=[]
+        # Create an instance of the Pinecone
+        self.pinecone = Pinecone(api_key=os.environ.get('PINECONE_API_KEY'))
+        # Create an instance of the Groq
+        self.groq_client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
 
-    # Check if the namespace exists in the index
-    index = pc.Index(index_name)
+    def get_huggingface_embeddings(self, text, model_name="sentence-transformers/all-MiniLM-L6-v2"):
+        model = SentenceTransformer(model_name)
+        return model.encode(text)
+    
+    def initialize_pinecone(self, index_name: str):
 
-    # Check if the namespace exists by listing the namespaces (or by trying to query)
-    namespaces = index.describe_index_stats().get('namespaces', [])
-    max_retries = 5
-    wait_time = 2000
-    if namespace in namespaces:
-        print(f"Namespace '{namespace}' found. Deleting vector data...")
-        index.delete(namespace=namespace, delete_all=True)  # Initiates deletion
+        #Check if the index already exists; if not, raise an error or handle accordingly
+        if index_name not in [index.name for index in self.pinecone.list_indexes().indexes]:
+            raise ValueError(f"Index raise '{index_name}' does not exist. Please create it first.")
 
-        # Polling to ensure deletion completes
-        for attempt in range(max_retries):
-            namespaces = index.describe_index_stats().get('namespaces', [])
-            if namespace not in namespaces:
-                print(f"Namespace '{namespace}' deletion confirmed.")
-                break
-            time.sleep(wait_time)  # Wait before re-checking
+        # Connect to the specified index
+        pinecone_index = self.pinecone.Index(index_name)
+
+        return pinecone_index
+    
+    def upsert_vectorstore_to_pinecone(self, document_data, index_name, namespace):
+
+        # Check if the namespace exists in the index
+        pinecone_index = self.initialize_pinecone(index_name)
+
+        # Check if the namespace exists by listing the namespaces (or by trying to query)
+        namespaces = pinecone_index.describe_index_stats().get('namespaces', [])
+        max_retries = 5
+        wait_time = 2000
+        if namespace in namespaces:
+            print(f"Namespace '{namespace}' found. Deleting vector data...")
+            pinecone_index.delete(namespace=namespace, delete_all=True)  # Initiates deletion
+
+            # Polling to ensure deletion completes
+            for attempt in range(max_retries):
+                namespaces = pinecone_index.describe_index_stats().get('namespaces', [])
+                if namespace not in namespaces:
+                    print(f"Namespace '{namespace}' deletion confirmed.")
+                    break
+                time.sleep(wait_time)  # Wait before re-checking
+            else:
+                raise RuntimeError(f"Failed to delete namespace '{namespace}' after {max_retries} retries.")
+
         else:
-            raise RuntimeError(f"Failed to delete namespace '{namespace}' after {max_retries} retries.")
+            print(f"Namespace '{namespace}' does not exist. Proceeding with upsert.")
 
-    else:
-        print(f"Namespace '{namespace}' does not exist. Proceeding with upsert.")
+        # Create or replace the vector store
+        vectorstore_from_documents = PineconeVectorStore.from_documents(
+            document_data,
+            self.embeddings,
+            index_name=index_name,
+            namespace=namespace
+        )
+        print(f"Vector store type: {type(vectorstore_from_documents)}")
 
-    # Create or replace the vector store
-    vectorstore_from_documents = PineconeVectorStore.from_documents(
-        document_data,
-        embeddings,
-        index_name=index_name,
-        namespace=namespace
-    )
-    print(f"Vector store type: {type(vectorstore_from_documents)}")
+        # Optionally, return the vector store if needed
+        return vectorstore_from_documents
 
-    # Optionally, return the vector store if needed
-    return vectorstore_from_documents
+    def perform_rag(self, index_name, namespace, query):
+        
+        pinecone_index = self.initialize_pinecone(index_name)
+        raw_query_embedding = self.get_huggingface_embeddings(query)
 
-def initialize_pinecone(index_name: str):
+        query_embedding = np.array(raw_query_embedding)
 
-    # Create an instance of the Pinecone class
-    pc = Pinecone(api_key=os.environ.get('PINECONE_API_KEY'))
+        top_matches = pinecone_index.query(vector=query_embedding.tolist(), top_k=10, include_metadata=True, namespace=namespace)
 
-    #Check if the index already exists; if not, raise an error or handle accordingly
-    if index_name not in [index.name for index in pc.list_indexes().indexes]:
-        raise ValueError(f"Index raise '{index_name}' does not exist. Please create it first.")
+        # Get the list of retrieved texts
+        contexts = [item['metadata']['text'] for item in top_matches['matches']]
 
-    # Connect to the specified index
-    pinecone_index = pc. Index(index_name)
+        augmented_query = "<CONTEXT>\n" + "\n\n-------\n\n".join(contexts[ : 10]) + "\n-------\n</CONTEXT>\n\n\n\nMY QUESTION:\n" + query
+        
+        conversations="\n".join([f"{msg['role'].upper()}:{msg['content']}" for msg in self.conversation_history])
 
-    return pinecone_index
+        augmented_query += f"Conversation History:\n{conversations}\n\nMy Question:\n{query}"
 
-def perform_rag(pinecone_index, namespace, query):
-    raw_query_embedding = get_huggingface_embeddings(query)
+        # Modify the prompt below as need to improve the response quality
+        system_prompt = f'''
+        You are a skilled expert in analyzing and understanding textual content from various sources, including YouTube video transcripts and document files.
+        Your task is to answer any questions I have based on the provided text.
+        If timestamps are present in seconds, convert them into a minutes:seconds format (e.g., 90 seconds becomes 1:30).
+        Respond clearly and concisely with complete accuracy.
+        '''
 
-    query_embedding = np.array(raw_query_embedding)
+        res = self.groq_client.chat.completions.create(
+            model="llama-3.1-70b-versatile", # llama-3.1-70b-versatile
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": augmented_query}
+            ]
+        )
 
-    top_matches = pinecone_index.query(vector=query_embedding.tolist(), top_k=10, include_metadata=True, namespace=namespace)
+        #Update conversations
+        self.conversation_history.append({'role':'user','content':query})
+        self.conversation_history.append({'role':'assistant','content':res.choices[0].message.content})
 
-    # Get the list of retrieved texts
-    contexts = [item['metadata']['text'] for item in top_matches['matches']]
-
-    augmented_query = "<CONTEXT>\n" + "\n\n-------\n\n".join(contexts[ : 10]) + "\n-------\n</CONTEXT>\n\n\n\nMY QUESTION:\n" + query
-    # Modify the prompt below as need to improve the response quality
-    system_prompt = f'''
-    You are a skilled expert in analyzing and understanding textual content from various sources, including YouTube video transcripts and document files.
-    Your task is to answer any questions I have based on the provided text.
-    If timestamps are present in seconds, convert them into a minutes:seconds format (e.g., 90 seconds becomes 1:30).
-    Respond clearly and concisely with complete accuracy.
-    '''
-
-    groq_client = Groq(api_key=os.environ.get('GROQ_API_KEY'))
-    res = groq_client.chat.completions.create(
-        model="llama-3.1-70b-versatile", # llama-3.1-70b-versatile
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": augmented_query}
-        ]
-    )
-
-    return res.choices[0].message.content
+        return res.choices[0].message.content
+    
+    def reset_memory(self):
+        """
+        Clear the conversation history.
+        """
+        self.conversation_history = []
 
 class YouTubeTranscriber:
     def __init__(self, url, transcript_language='en', output_dir='resources/transcripts'):

@@ -44,6 +44,7 @@ google-auth==2.35.0
 google-auth-httplib2==0.2.0
 googleapis-common-protos==1.65.0
 groq==0.12.0
+gunicorn==23.0.0
 gymnasium==0.29.1
 h11==0.14.0
 httpcore==1.0.7
@@ -68,8 +69,8 @@ jupyter_client==8.6.0
 jupyter_core==5.5.0
 kiwisolver==1.4.5
 langchain==0.3.8
-langchain-community==0.3.8
 langchain-core==0.3.21
+langchain-huggingface==0.1.2
 langchain-pinecone==0.2.0
 langchain-text-splitters==0.3.2
 langsmith==0.1.145
