@@ -324,6 +324,8 @@ class YouTubeTranscriber:
         :param video_id: YouTube video ID
         :param transcript: Transcript data to save
         """
+        # Ensure the output directory exists
+        os.makedirs(self.output_dir, exist_ok=True)
         file_path = os.path.join(self.output_dir, f"{video_id}_transcript.txt")
         with open(file_path, "w", encoding="utf-8") as file:
             for line in transcript:
