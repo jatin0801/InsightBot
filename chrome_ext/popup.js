@@ -49,7 +49,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Submit the URL
         try {
+
+            // Create the loader overlay
+            const loaderOverlay = document.createElement('div');
+            loaderOverlay.className = 'loader-overlay';
+
+            // Create the loader box
+            const loaderBox = document.createElement('div');
+            loaderBox.className = 'loader-box';
+
+            // Add spinner and text to the loader box
+            loaderBox.innerHTML = `
+                <div class="loader-spinner"></div>
+                <div class="loader-text">Analyzing media... Please wait</div>
+            `;
+
+            // Append the loader box to the overlay
+            loaderOverlay.appendChild(loaderBox);
+
+            // Append the overlay to the body
+            document.body.appendChild(loaderOverlay);
+
+            // Call submitMedia and wait for the server response
             const response = await submitMedia([{ type: 'YouTube', value: url }]);
+
+            // Remove the loader overlay once a response is received
+            loaderOverlay.remove();
+
             console.log("Media submitted successfully:", response);
 
             // Optionally, handle the response if needed
@@ -85,6 +111,7 @@ function askQuestion() {
     questionElement.className = 'chat-message question';
     questionElement.textContent = question;
     chatBox.appendChild(questionElement);
+    chatBox.scrollTop = chatBox.scrollHeight;
 
     // Clear the input
     document.getElementById('question-input').value = '';
@@ -118,7 +145,16 @@ function clearChat() {
     document.getElementById('chat-box').innerHTML = '';
 }
 
+const inputBox = document.getElementById('question-input');
+const sendButton = document.getElementById('send-button');
 
+// Add keydown event listener to the input box
+inputBox.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        // Trigger the send button click when Enter is pressed
+        sendButton.click();
+    }
+});
 
 // document.getElementById("sendData").addEventListener("click", async () => {
 //     const inputData = document.getElementById("inputData").value;
