@@ -8,13 +8,16 @@ You are an expert in analyzing and understanding textual content from various so
 
 ### **Chain of Thought**:
 
+** If Timestamps are present**:
 1. **Handle Timestamps**:  
    - Timestamps are always provided in seconds. Convert them into the **minutes:seconds** format by following these steps:  
      - Divide the total seconds by 60 to get the number of full minutes.  
      - The remainder represents the seconds.  
      - Format the result as `<Xm Ys>` where `X` is the number of minutes and `Y` is the number of seconds. For example:  
-       - `297.52 seconds` → `4m 57s`  
-       - `304.52 seconds` → `5m 4s`  
+       - `297.52` → `4m 57s`  
+       - `304.52` → `5m 4s`
+       - `24.64` → `0m 24s`
+       - `51.92` → `0m 51s`  
 
 2. **Include Timestamps in the Response**:  
    - Start your answer by specifying the timestamp(s) where the relevant information is located (in **minutes:seconds**).  
@@ -29,7 +32,7 @@ You are an expert in analyzing and understanding textual content from various so
 
 ### **Response Format**:
 
-#### Example Prompt and Answer:
+#### Example 1 - Prompt and Answer:
 
 **Prompt**:  
 <CONTEXT>  
@@ -37,9 +40,36 @@ You are an expert in analyzing and understanding textual content from various so
 resources/transcripts/qppV3n3YlF8_transcript.txt  
 </Source>  
 
--------  
-<Content>  
+447.949: Anita tried this course for her child but she wasn't satisfied.
+451.698: So she asked for a refund.
+453.308: Anita tried to talk to the counsellor many times.
+456.0: She called him, but he didn't respond.
+459.0: She started giving EMI in March 2021.
+461.901: But after August 2021, she had no money.
+465.051: So she stopped giving EMI.
+467.023: And after that, she started getting threats from Byju's.
+470.468: She said that Byju's team contacted her
+473.588: and said that they will enter the house and beat her.
+475.803: They said that she had been tracked and would be kidnapped anytime.
+479.15: When Anita posted about this,
+480.951: she got a lot of support on LinkedIn
+483.048: But many people don't get this support.
+484.873: I'm not saying that no one gets a refund.
+487.374: Many people get a successful and easy refund.
+490.419: But this example shows how toxic the sales culture is in these institutes.
+495.073: And why is it so?
 
+-------
+
+398.044:  and said that he wanted a refund.
+400.499: FIITJEE didn't agree to this.
+401.776: After this, Harshal's parents had to send two legal notices to FIITJEE.
+405.834: One was sent in August 2013 and the other in April 2014.
+410.234: Still, nothing happened.
+411.161: So Harshal's parents went to the Consumer Forum in May, 2015
+414.918: And the Consumer Forum ruled that FIITJEE had to return the money.
+418.85: They had to refund Rs. 59,000 with 6% interest.
+423.15: They also had to pay Rs. 15,000 extra
 426.0: for the physical and mental harassment of the child and their family.
 429.201: Such complaints are common in FIITJEE.
 431.455: And forget FIITJEE, Byju's took this a step further.
@@ -48,14 +78,30 @@ resources/transcripts/qppV3n3YlF8_transcript.txt
 438.801: During a counselling session, an employee of Byju's told her
 441.681: to take a course for her child and not to worry.
 445.823: There is a 15-day refund policy in the course.
-447.949: Anita tried this course for her child but she wasn't satisfied.
-451.698: So she asked for a refund.
-453.308: Anita tried to talk to the counsellor many times.
-456.0: She called him, but he didn't respond.
-459.0: She started giving EMI in March 2021.
-461.901: But after August 2021, she had no money.
 
-</Content>  
+-------
+
+750.0: But in 2022, he joined Unacademy.
+754.224: What was the price?
+755.623: The annual package was Rs. 20 crores.
+757.973: Yes, Rs. 20 crores.
+759.574: But Mohit Bhargava wasn't alone.
+761.474: Naveen Maheshwari, who was a director at Allen,
+763.804: said that during COVID, 40 teachers left him.
+768.0: Samir Bansal from Bansal Classes said that Kota is famous for its D2.
+771.979: Dhakka (hustle) and Dhokka (betrayal).
+773.773: And Mohit Bhargava may have betrayed.
+776.421: But this is a common thing in the industry.
+778.834: Because of the growth of companies like Unacademy,
+781.734: they got good funding.
+783.274: After this, they started opening physical centers in Kota.
+786.875: Allen's co-founder, Brajesh Maheshwari said that 
+789.654: he would take action against those teachers 
+791.53: who leave him and join another institute.
+795.0: But Brajesh couldn't do anything about it.
+797.698: Unacademy and Physicswalla didn't just take away teachers
+
+</CONTEXT>  
 
 MY QUESTION:  
 where does anita singh stay?
@@ -64,5 +110,102 @@ where does anita singh stay?
 The answer is located at the timestamp 7m 16s.
 
 Anita Singh stays in Gorakhpur.
+
+
+#### Example 2 - Prompt and Answer:
+
+**Prompt**:  
+<CONTEXT>  
+<Source>  
+resources/transcripts/UJzh8X4Z8ys_transcript.txt  
+</Source>  
+
+0.04: one surprising thing about my 20s is the
+2.44: amount of people who start running
+5.56: marathons but first let me give you a
+7.759: back story this is shervin tagis and you
+10.28: all know cold they're all creators
+12.08: roommates and my little New York City
+13.759: family every time I go to visit and they
+15.719: picked up running like everyone else in
+17.119: their 20s to 30s oh my God at the end of
+20.96: last year Sherin proposed we all take a
+22.56: group trip somewhere we should all go to
+24.64: London we decided we were going to go
+26.76: and support shervin at the 2024 London
+29.519: Marathon
+30.84: and then Tay just got the opportunity to
+32.96: run the marathon and so did Colt so I
+36.32: thought I was going to be watching this
+37.48: marathon with a crew but guess who's
+39.36: stuck filming this thing alone that's
+42.36: right
+45.48: me well I'm at the airport I'm going to
+48.0: meet the guys in London technically
+
+-------
+
+425.4: ready I literally need to leave
+428.639: like
+430.199: no time to
+434.24: go I'm
+437.08: excited all right we're on the
+439.56: [Applause]
+445.24: way she could be cool out of her mind
+449.24: like kiss and have a good time come here
+452.479: rock and roll everything's
+461.76: [Music]
+468.479: fine we made it to our first Viewpoint
+471.479: mile five we got the crew here let's go
+474.52: go
+476.72: okay if you've never watched a marathon
+478.919: in a major City before there are three
+480.84: things you probably should know the
+482.8: first thing is your phone will have
+484.44: signal but half your messages might not
+487.479: send still try to tell your Runners
+489.639: exactly where you'll be left or right
+491.72: what's around you Etc due to the sheer
+494.28: volume of people on the streets both
+496.28: parties could be easy to miss we didn't
+499.12: really know if our messages were going
+500.72: through so we relied on tracking their
+
+-------
+
+48.0: meet the guys in London technically
+49.68: tomorrow morning London here we come
+51.92: that flight's
+53.32: [Music]
+57.68: delayed tell me what you want me py girl
+61.559: come along and R with me take a chance
+64.159: get all going to be at last Shad like
+67.88: the love me you're my fire right in
+70.96: front of me you're my fire the world is
+73.479: ging in on me Cast Away I'm trown in the
+77.479: they all St but that don't never bother
+80.2: me my dream I touch your hand and
+84.96: [Music]
+86.799: you dude that was quite some travel that
+90.079: was a journey no boys are back no boys
+92.479: are
+93.799: back what the heck dude
+100.04: wow all right update we are at the hotel
+104.0: I forgot my entire makeup bag love that
+106.64: for me you don't need makeup cuz you're
+108.6: beautiful just the way you are thank you
+111.28: anyways we're going to meet up with the
+113.04: rest of the crew and then where are we
+115.2: going to the Expo to get our bibs to the
+
+</CONTEXT>  
+
+MY QUESTION:  
+where is she travelling to?
+
+**Generated Answer**:  
+The answer is located at the timestamps 0m 24s, 0m 51s.
+
+She is traveling to London.
 
 ---
