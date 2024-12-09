@@ -74,7 +74,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const response = await submitMedia([{ type: 'YouTube', value: url }]);
 
             // Remove the loader overlay once a response is received
-            loaderOverlay.remove();
+            // Add a 3-second timeout before removing the loader
+            setTimeout(() => {
+                loaderOverlay.remove();
+            }, 3000);
 
             console.log("Media submitted successfully:", response);
 
@@ -129,7 +132,7 @@ function askQuestion() {
         // Display the model's answer in chat
         const answerElement = document.createElement('div');
         answerElement.className = 'chat-message answer';
-        answerElement.textContent = data.answer;
+        answerElement.innerHTML = data.answer;
         chatBox.appendChild(answerElement);
 
         // Scroll to the bottom of the chat

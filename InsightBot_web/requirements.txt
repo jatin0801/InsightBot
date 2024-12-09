@@ -75,6 +75,7 @@ langchain-pinecone==0.2.0
 langchain-text-splitters==0.3.2
 langsmith==0.1.145
 lxml==5.3.0
+Markdown==3.7
 MarkupSafe==2.1.5
 marshmallow==3.23.1
 matplotlib==3.9.2

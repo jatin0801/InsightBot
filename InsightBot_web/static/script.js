@@ -32,7 +32,7 @@ function askQuestion() {
         // Display the model's answer in chat
         const answerElement = document.createElement('div');
         answerElement.className = 'chat-message answer';
-        answerElement.textContent = data.answer;
+        answerElement.innerHTML = data.answer; 
         chatBox.appendChild(answerElement);
 
         // Scroll to the bottom of the chat
@@ -140,7 +140,10 @@ async function goToChatbot() {
             const response = await submitMedia();
 
             // Remove the loader overlay once a response is received
-            loaderOverlay.remove();
+            // Add a 3-second timeout before removing the loader
+            setTimeout(() => {
+                loaderOverlay.remove();
+            }, 3000);
             
             if (response.ok) {
                 // Redirect to the chatbot page if submission is successful

@@ -201,6 +201,9 @@ class RAG:
 
     def perform_rag(self, index_name, namespace, query):
         
+        with open("prompt.txt", "r", encoding="utf-8") as f:
+            system_prompt = f.read()
+
         pinecone_index = self.initialize_pinecone(index_name)
         raw_query_embedding = self.get_huggingface_embeddings(query)
 
@@ -212,18 +215,10 @@ class RAG:
         contexts = [item['metadata']['text'] for item in top_matches['matches']]
 
         augmented_query = "<CONTEXT>\n" + "\n\n-------\n\n".join(contexts[ : 10]) + "\n-------\n</CONTEXT>\n\n\n\nMY QUESTION:\n" + query
-        
+
         conversations="\n".join([f"{msg['role'].upper()}:{msg['content']}" for msg in self.conversation_history])
 
         augmented_query += f"Conversation History:\n{conversations}\n\nMy Question:\n{query}"
-
-        # Modify the prompt below as need to improve the response quality
-        system_prompt = f'''
-        You are a skilled expert in analyzing and understanding textual content from various sources, including YouTube video transcripts and document files.
-        Your task is to answer any questions I have based on the provided text.
-        If timestamps are present in seconds, convert them into a minutes:seconds format (e.g., 90 seconds becomes 1:30).
-        Respond clearly and concisely with complete accuracy.
-        '''
 
         res = self.groq_client.chat.completions.create(
             model="llama-3.1-70b-versatile", # llama-3.1-70b-versatile
@@ -246,7 +241,7 @@ class RAG:
         self.conversation_history = []
 
 class YouTubeTranscriber:
-    def __init__(self, url, transcript_language='en', output_dir='resources/transcripts'):
+    def __init__(self, url, transcript_language=['en', 'en-IN'], output_dir='resources/transcripts'):
         """
         Initializes the YouTubeTranscriber with a URL (playlist or single video), transcript language, and output directory.
 
@@ -311,7 +306,7 @@ class YouTubeTranscriber:
         """
         try:
             # Fetch transcript with the specified language
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[self.transcript_language])
+            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=self.transcript_language)
             return transcript
         except Exception as e:
             print(f"Could not retrieve transcript for video ID {video_id}: {e}")

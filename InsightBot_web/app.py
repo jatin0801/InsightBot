@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, session
 import os
 from utils import *
 from flask_cors import CORS
+import markdown
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["chrome-extension://eiiahlhaagkfnmgababhglmlonbebhke"]}})
@@ -88,7 +89,8 @@ def ask_question():
     index_name = "insight-bot"
     namespace = "media-data"
     answer=rag_client.perform_rag(index_name, namespace, question)
-    return jsonify({"question": question, "answer": answer})
+    html_output = markdown.markdown(answer)
+    return jsonify({"question": question, "answer": html_output})
 
 if __name__ == "__main__":
     app.run(debug=True)
