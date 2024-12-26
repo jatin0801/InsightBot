@@ -3,6 +3,7 @@ import os
 from utils import *
 from flask_cors import CORS
 import markdown
+import io
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["chrome-extension://eiiahlhaagkfnmgababhglmlonbebhke"]}})
@@ -46,23 +47,49 @@ def submit_media():
                 if youtube_link:
                     print(f"Processing YouTube Link: {youtube_link}")
                     transcriber = YouTubeTranscriber(youtube_link, output_dir = transcript_dir_path)
-                    transcriber.transcribe()
+                    transcripts = transcriber.transcribe_return_text()
+                    for transcript in transcripts:
+                        # Process transcript (add to `all_documents` or any other logic)
+                        all_documents.append({"File": youtube_link, "Data": transcript})
                     print(f"Transcription complete for: {youtube_link}")
-            # process all transcripts
-            transcript_documents = process_directory(transcript_dir_path)
-            all_documents.extend(transcript_documents)
+
 
         # Process uploaded documents
         if files:
             print("=== Processing Uploaded Documents ===")
             for file in files:
-                file_path = os.path.join(document_dir_path, file.filename)
-                file.save(file_path)
-                print(f"Saved file: {file_path}")
-            # process all documents
-            uploaded_documents = process_directory(document_dir_path)
-            all_documents.extend(uploaded_documents)
-
+                print(f"Processing file: {file.filename}")
+                try:
+                    # Read file content directly
+                    file_data = file.read()  # Read file content into memory
+                    
+                    # Determine file type and process accordingly
+                    if file.filename.endswith(".txt"):
+                        content = file_data.decode("utf-8")
+                    elif file.filename.endswith(".pdf"):
+                        reader = PdfReader(io.BytesIO(file_data))
+                        content = ""
+                        for page in reader.pages:
+                            content += page.extract_text()
+                    elif file.filename.endswith(".docx"):
+                        document = DocxDocument(io.BytesIO(file_data))
+                        content = "\n".join([para.text for para in document.paragraphs])
+                    else:
+                        print(f"Unsupported file format: {file.filename}")
+                        continue
+                    
+                    # Ensure valid content was extracted
+                    if not content.strip():
+                        print(f"Warning: No content extracted from {file.filename}. Skipping.")
+                        continue
+                    
+                    # Append the processed document
+                    all_documents.append({"File": file.filename, "Data": content})
+                    print(f"Processed file: {file.filename}")
+                
+                except Exception as e:
+                    print(f"Error processing file {file.filename}: {e}")
+                    
         if not all_documents:
             return jsonify({"error": "No valid documents to process"}), 400
 

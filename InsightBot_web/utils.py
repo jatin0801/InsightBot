@@ -335,6 +335,18 @@ class YouTubeTranscriber:
             transcript = self.fetch_transcript(video_id)
             if transcript:
                 self.save_transcript_to_file(video_id, transcript)
+    
+    def transcribe_playlist_return_text(self):
+        """
+        Fetches transcripts for all videos in the playlist and returns them as a list of strings.
+        """
+        transcripts = []
+        for video_id in self.playlist_ids:
+            print(f"Fetching transcript for video ID: {video_id}")
+            transcript_text = self.fetch_transcript_as_text(video_id)
+            if transcript_text:
+                transcripts.append(transcript_text)
+        return transcripts
 
     def transcribe_single_video(self):
         """
@@ -345,6 +357,14 @@ class YouTubeTranscriber:
         if transcript:
             self.save_transcript_to_file(self.video_id, transcript)
 
+    def transcribe_single_video_return_text(self):
+        """
+        Fetches the transcript for a single YouTube video and returns it as a string.
+        """
+        print(f"Fetching transcript for video ID: {self.video_id}")
+        return self.fetch_transcript_as_text(self.video_id)
+
+
     def transcribe(self):
         """
         Determines if the URL is a playlist or single video and processes accordingly.
@@ -353,6 +373,15 @@ class YouTubeTranscriber:
             self.transcribe_playlist()
         else:
             self.transcribe_single_video()
+
+    def transcribe_return_text(self):
+        """
+        Fetches the transcript(s) and returns them directly.
+        """
+        if self.is_playlist:
+            return self.transcribe_playlist_return_text()
+        else:
+            return [self.transcribe_single_video_return_text()]
     
     def file_exists(self, video_id):
         """
@@ -363,3 +392,16 @@ class YouTubeTranscriber:
         """
         file_path = os.path.join(self.output_dir, f"{video_id}_transcript.txt")
         return [os.path.isfile(file_path), file_path] # [True/False, path]
+    
+    def fetch_transcript_as_text(self, video_id):
+        """
+        Fetches the transcript for a video and returns it as a string.
+
+        :param video_id: YouTube video ID
+        :return: Transcript as a single string
+        """
+        transcript = self.fetch_transcript(video_id)
+        if transcript:
+            return "\n".join([f"{line['start']}: {line['text']}" for line in transcript])
+        return None
+
